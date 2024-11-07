@@ -6,6 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack serve --mode development",
+    "server": "node server/server.js",
+    "dev": "concurrently \"npm run start\" \"npm run server\"",
     "build": "webpack --mode production"
   },
   "keywords": [],
@@ -36,6 +38,7 @@
     "tailwindcss": "^3.4.14",
     "webpack": "^5.96.1",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.1.0"
+    "webpack-dev-server": "^5.1.0",
+    "concurrently": "^8.0.1"
   }
 }

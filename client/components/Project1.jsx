@@ -1,24 +1,50 @@
 // Project1.jsx
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { io } from 'socket.io-client';
 import { makeMove, resetGame, setWinner } from '../actions/actions';
 import '../stylesheets/gomoku.css'; // Ensure gomoku.css is imported
+import socketManager from '../socket/socket.js';
 
 const Project1 = () => {
   const dispatch = useDispatch();
-  const board = useSelector((state) => state.gomoku.board);
-  const currentPlayer = useSelector((state) => state.gomoku.currentPlayer);
-  const winner = useSelector((state) => state.gomoku.winner);
+  const gameState = useSelector((state) => state.gomoku);
+
+  useEffect(() => {
+    socketManager.connect(dispatch);
+    return () => socketManager.disconnect();
+  }, []);
 
   const handleCellClick = (x, y) => {
-    console.log(`Cell clicked at (${x}, ${y})`);
-    if (board[y][x] || winner) return;
-    dispatch(makeMove(x, y, currentPlayer));
-    if (checkWinner(board, x, y, currentPlayer)) {
-      dispatch(setWinner(currentPlayer));
+    console.log('Cell clicked:', {
+      x,
+      y,
+      isMyTurn: gameState.isMyTurn,
+      gameStatus: gameState.gameStatus,
+      roomId: gameState.roomId,
+    });
+
+    if (
+      !gameState.isMyTurn ||
+      gameState.board[y][x] ||
+      gameState.winner ||
+      gameState.gameStatus !== 'playing'
+    ) {
+      return;
     }
+
+    socketManager.makeMove(x, y, gameState.roomId);
   };
+
+  // Render waiting room if game hasn't started
+  if (gameState.gameStatus === 'waiting') {
+    return (
+      <div className='flex items-center justify-center h-screen'>
+        <div className='text-xl'>Waiting for opponent...</div>
+      </div>
+    );
+  }
 
   const handleReset = () => {
     console.log('Game reset');
@@ -74,31 +100,62 @@ const Project1 = () => {
     return false;
   };
 
+  // Add game status display
+  const getGameStatus = () => {
+    if (gameState.gameStatus === 'waiting') return 'Waiting for opponent...';
+    if (gameState.gameStatus === 'playing') {
+      return gameState.isMyTurn ? 'Your turn' : "Opponent's turn";
+    }
+    return gameState.winner ? `Winner: ${gameState.winner}` : '';
+  };
+
   // Determine the winner's class
   const winnerClass =
-    winner === 'cheems'
+    gameState.winner === 'cheems'
       ? 'winner-cheems'
-      : winner === 'darkdoge'
+      : gameState.winner === 'darkdoge'
       ? 'winner-darkdoge'
       : '';
+
+  const getPlayerRole = () => {
+    if (!gameState.playerId || !gameState.players) return '';
+    return gameState.players[0] === gameState.playerId ? 'Dark Doge' : 'Cheems';
+  };
 
   return (
     <div className='flex flex-col items-center bg-yellow-50 min-h-screen'>
       <h2
         className={`text-2xl font-medium mb-4 ${
-          winner
-            ? winner === 'cheems'
+          gameState.winner
+            ? gameState.winner === 'cheems'
               ? 'winner-cheems'
               : 'winner-darkdoge'
             : ''
         }`}
       >
-        {winner
-          ? `Winner: ${winner === 'black' ? 'Dark Doge' : 'Cheems'}`
+        {gameState.winner
+          ? `Winner: ${gameState.winner === 'black' ? 'Dark Doge' : 'Cheems'}`
           : `Current Player: ${
-              currentPlayer === 'black' ? 'Dark Doge' : 'Cheems'
+              gameState.currentPlayer === 'black' ? 'Dark Doge' : 'Cheems'
             }`}
       </h2>
+
+      {/* Add player role display */}
+      <div className='mb-4 text-lg text-amber-700'>
+        You are playing as: {getPlayerRole()}
+      </div>
+
+      {/* Status display */}
+      <div className='mb-4 text-lg text-amber-600'>
+        {gameState.winner
+          ? `Game Over! ${
+              gameState.winner === 'black' ? 'Dark Doge' : 'Cheems'
+            } wins!`
+          : gameState.isMyTurn
+          ? 'Your turn!'
+          : "Opponent's turn"}
+      </div>
+
       <div className='board-container'>
         {/* Grid Lines */}
         {[...Array(15)].map((_, i) => (
@@ -116,7 +173,7 @@ const Project1 = () => {
 
         {/* Pieces */}
         <div className='pieces-grid'>
-          {board.map((row, y) =>
+          {gameState.board.map((row, y) =>
             row.map((cell, x) => (
               <div
                 key={`${x}-${y}`}
@@ -131,10 +188,10 @@ const Project1 = () => {
                 }}
               >
                 {/* Hover Effect */}
-                {!cell && !winner && (
+                {!cell && !gameState.winner && (
                   <div
                     className={`piece hover ${
-                      currentPlayer === 'black' ? 'black' : 'white'
+                      gameState.currentPlayer === 'black' ? 'black' : 'white'
                     }`}
                   ></div>
                 )}
@@ -149,12 +206,16 @@ const Project1 = () => {
           )}
         </div>
       </div>
-      <button
-        onClick={handleReset}
-        className='mt-4 px-4 py-2 bg-amber-500 text-white rounded'
-      >
-        Reset Game
-      </button>
+
+      {/* Only show reset button if game is over */}
+      {gameState.winner && (
+        <button
+          onClick={handleReset}
+          className='mt-4 px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600'
+        >
+          New Game
+        </button>
+      )}
     </div>
   );
 };
