@@ -1,6 +1,9 @@
 const express = require('express');
 const path = require('path');
-
+const http = require('http');
+const { Server } = require('socket.io');
+const server = http.createServer(app);
+const io = new Server(server);
 const app = express();
 const PORT = 3000;
 
@@ -11,7 +14,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from a public directory (if needed)
 // app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from the build directory
+app.use(express.static(path.join(__dirname, '../dist')));
 
+// All API routes here (if any)
+
+// Send index.html for all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+});
 // Define a basic route
 app.get('/', (req, res) => {
   res.send('Server is running!');

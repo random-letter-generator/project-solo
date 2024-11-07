@@ -16,32 +16,34 @@ import TopBar from '../components/TopBar.jsx';
 import ProjectsContainer from './ProjectsContainer.jsx';
 
 const MainContainer = () => {
-  const dispatch = useDispatch();
+  return (
+    <div className='w-full flex flex-col space-y-6'>
+      <div className='bg-amber-50/80 backdrop-blur-sm'>
+        <TopBar />
+      </div>
 
-  useEffect(() => {
-    const projects = [
-      {
-        id: 1,
-        title: 'Project One',
-        description: 'This is a placeholder for Project One.',
-        link: 'https://example.com/project-one',
-      },
-      {
-        id: 2,
-        title: 'Project Two',
-        description: 'This is a placeholder for Project Two.',
-        link: 'https://example.com/project-two',
-      },
-      {
-        id: 3,
-        title: 'Project Three',
-        description: 'This is a placeholder for Project Three.',
-        link: 'https://example.com/project-three',
-      },
-    ];
+      <div className='text-center'>
+        <h1
+          className='text-3xl sm:text-4xl font-light tracking-tight
+                    bg-gradient-to-r from-amber-700 to-amber-900
+                    bg-clip-text text-transparent
+                    transition-all duration-300'
+        >
+          Solo Project
+        </h1>
+        <p className='mt-2 text-amber-600/70 text-sm sm:text-base font-light'>
+          A collection of fun demos
+        </p>
+      </div>
 
-    dispatch(setProjects(projects));
-  }, [dispatch]);
+      <div
+        className='border border-amber-100/30 rounded-lg bg-amber-50/80
+                    backdrop-blur-sm shadow-sm p-4 sm:p-6'
+      >
+        <ProjectsContainer />
+      </div>
+    </div>
+  );
 };
 
 export default MainContainer;

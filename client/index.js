@@ -1,16 +1,18 @@
 // index.js
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import App from './App.jsx';
 import store from './store';
-import './stylesheets/main.css';
-import { createRoot } from 'react-dom/client';
+import './stylesheets/output.css';
+import './stylesheets/gomoku.css';
 
-const root = createRoot(document.getElementById('contents'));
+const root = createRoot(document.getElementById('root'));
 root.render(
-  // wrap the App in the Provider Component and pass in the store
   <Provider store={store}>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </Provider>
 );

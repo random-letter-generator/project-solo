@@ -4,17 +4,25 @@
   "description": "## This is my toy project",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack serve --mode development",
+    "build": "webpack --mode production"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@reduxjs/toolkit": "^2.3.0",
     "framer-motion": "^11.11.11",
+    "html-webpack-plugin": "^5.6.3",
+    "mongodb": "^6.10.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-redux": "^9.1.2",
-    "redux": "^5.0.1"
+    "react-router-dom": "^6.28.0",
+    "redux": "^5.0.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

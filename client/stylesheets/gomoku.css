@@ -1,0 +1,150 @@
+/* gomoku.css */
+body {
+  background-color: #d2ab0d;
+}
+.board-container {
+  position: relative;
+  width: 750px;
+  height: 750px;
+  background-color: #f5deb3;
+  border: 2px solid #654321; /* Optional: Add a border to the board */
+}
+
+.board-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../assets/logo.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* background-blend-mode: multiply; Blend the image with the background color */
+  opacity: 0.1; /* Adjust opacity to make it subtle */
+  z-index: 0; /* Ensure it is behind other elements */
+}
+
+.board-line {
+  position: absolute;
+  background-color: black;
+}
+
+.board-line.horizontal {
+  width: 100%;
+  height: 1px;
+}
+
+.board-line.vertical {
+  height: 100%;
+  width: 1px;
+}
+
+.pieces-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  grid-template-rows: repeat(15, 1fr);
+}
+
+.piece-cell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.piece {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 30px; /* Adjusted size */
+  height: 30px; /* Adjusted size */
+  border-radius: 50%;
+  border: 1px solid black;
+  transform: translate(-50%, -50%); /* Center the piece */
+  pointer-events: none; /* Allow clicks to pass through */
+  transition: opacity 0.2s ease;
+}
+
+/* Dark Piece with Doge Icon */
+.piece.black {
+  width: 50px; /* Increased size */
+  height: 50px; /* Increased size */
+  background-image: url('../assets/doge-dark.png');
+  background-size: 175% 150%; /* Adjusted size to maintain aspect ratio */
+  background-position: top center; /* Align to the top center */
+  background-repeat: no-repeat;
+  border: none; /* Remove border if not needed */
+}
+
+.piece.white {
+  width: 50px; /* Increased size */
+  height: 50px; /* Increased size */
+  background-image: url('../assets/cheems.webp');
+  background-size: 125% 150%; /* Adjusted size to maintain aspect ratio */
+  background-position: top center; /* Align to the top center */
+  background-repeat: no-repeat;
+  border: none; /* Remove border if not needed */
+}
+
+.piece.hover {
+  opacity: 0;
+}
+
+.piece.hover:hover {
+  opacity: 0.3;
+  pointer-events: auto; /* Enable hover effects */
+}
+
+/* Winner Announcement Animations */
+
+/* Glowing Animation for Cheems */
+@keyframes glowCheems {
+  0% {
+    text-shadow: 0 0 5px #ffeb3b, 0 0 10px #ffc107, 0 0 15px #ffeb3b;
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 0 0 20px #ffeb3b, 0 0 30px #ffc107, 0 0 40px #ffeb3b;
+    transform: scale(1.05);
+  }
+  100% {
+    text-shadow: 0 0 5px #ffeb3b, 0 0 10px #ffc107, 0 0 15px #ffeb3b;
+    transform: scale(1);
+  }
+}
+
+/* Shimmer Animation for Dark Doge */
+@keyframes shimmerDarkDoge {
+  0% {
+    color: #555;
+    text-shadow: 0 0 5px #999, 0 0 10px #333;
+    transform: translateX(-10px);
+  }
+  50% {
+    color: #333;
+    text-shadow: 0 0 10px #fff, 0 0 20px #000;
+    transform: translateX(10px);
+  }
+  100% {
+    color: #555;
+    text-shadow: 0 0 5px #999, 0 0 10px #333;
+    transform: translateX(-10px);
+  }
+}
+
+/* Winner Announcement Classes */
+.winner-cheems {
+  color: #ffeb3b; /* Bright yellow color for Cheems */
+  animation: glowCheems 2s infinite alternate;
+}
+
+.winner-darkdoge {
+  color: #555; /* Grey color for Dark Doge */
+  animation: shimmerDarkDoge 2s infinite alternate;
+}
