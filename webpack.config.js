@@ -10,10 +10,10 @@ module.exports = {
     publicPath: '/',
     assetModuleFilename: 'images/[hash][ext][query]',
   },
-  // resolve: {
-  //   extensions: ['.js', '.jsx'],
-  //   modules: [path.resolve(__dirname), 'node_modules'],
-  // },
+  resolve: {
+    extensions: ['.js', '.jsx', '.json'],
+    // modules: [path.resolve(__dirname), 'node_modules'],
+  },
   module: {
     rules: [
       {

@@ -1,6 +1,9 @@
 /* gomoku.css */
 body {
-  background-color: #d2ab0d;
+  background: linear-gradient(-45deg, #ffd700, #ffeb3b, #ffc107, #ffb300);
+  background-size: 400% 400%;
+  animation: flowingPattern 15s ease infinite;
+  min-height: 100vh;
 }
 .board-container {
   position: relative;
@@ -147,4 +150,35 @@ body {
 .winner-darkdoge {
   color: #555; /* Grey color for Dark Doge */
   animation: shimmerDarkDoge 2s infinite alternate;
+}
+
+/* Flowing background animation */
+@keyframes flowingPattern {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Recent Games List styles */
+.recent-games {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  max-width: 600px;
+  width: 100%;
+}
+
+.recent-game-item {
+  padding: 0.5rem;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }

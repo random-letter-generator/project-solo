@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+const gomokuController = require('./controllers/gomokuController');
 
 const app = express();
 const server = http.createServer(app);
@@ -55,7 +56,13 @@ gomokuIO.on('connection', (socket) => {
     }
   });
 
-  socket.on('move', ({ x, y, roomId }) => {
+  socket.on('setPlayerName', ({ name }) => {
+    const playerId = socket.id;
+    // Store player name in socket
+    socket.playerName = name;
+  });
+
+  socket.on('move', async ({ x, y, roomId }) => {
     console.log('Move received:', { x, y, roomId, playerId: socket.id });
     const game = games.get(roomId);
     if (!game) return;
@@ -82,6 +89,31 @@ gomokuIO.on('connection', (socket) => {
     // If there's a winner, clean up after emitting the move
     if (isWinner) {
       console.log('Winner found:', player);
+      const winnerId = socket.id;
+      const loserId = game.players.find((id) => id !== winnerId);
+      const winnerSocket = await gomokuIO
+        .fetchSockets()
+        .then((sockets) => sockets.find((s) => s.id === winnerId));
+      const loserSocket = await gomokuIO
+        .fetchSockets()
+        .then((sockets) => sockets.find((s) => s.id === loserId));
+
+      // Save game result
+      const gameResult = {
+        roomId,
+        winner: {
+          name: winnerSocket.playerName,
+          id: winnerId,
+        },
+        loser: {
+          name: loserSocket.playerName,
+          id: loserId,
+        },
+      };
+
+      // Emit event to trigger frontend update
+      gomokuIO.to(roomId).emit('gameResult', gameResult);
+
       games.delete(roomId);
       return;
     }
@@ -158,20 +190,15 @@ app.use(express.json());
 // Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from a public directory (if needed)
-// app.use(express.static(path.join(__dirname, 'public')));
-// Serve static files from the build directory
+// API routes must come before static files
+app.post('/api/game-results', gomokuController.saveGameResult);
+app.get('/api/recent-games', gomokuController.getRecentGames);
+
+// Static files and catch-all route should come last
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// All API routes here (if any)
-
-// Send index.html for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist', 'index.html'));
-});
-// Define a basic route
-app.get('/', (req, res) => {
-  res.send('Server is running!');
 });
 
 // Add this line to help with debugging

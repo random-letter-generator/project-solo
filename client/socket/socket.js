@@ -19,7 +19,7 @@ class SocketManager {
     this.dispatch = dispatch;
     this.socket = io('http://localhost:3000/gomoku', {
       transports: ['websocket'],
-      reconnection: false,
+      reconnection: true,
     });
     this.setupListeners();
   }
@@ -27,7 +27,7 @@ class SocketManager {
   setupListeners() {
     this.socket.on('connect', () => {
       console.log('Connected to server with ID:', this.socket.id);
-      this.socket.emit('findGame');
+      // Do not emit findGame here anymore
     });
 
     this.socket.on('gameStart', (gameState) => {
@@ -83,6 +83,13 @@ class SocketManager {
     }
     console.log('Emitting move to server:', { x, y, roomId });
     this.socket.emit('move', { x, y, roomId });
+  }
+
+  setPlayerName(name) {
+    if (this.socket) {
+      this.socket.emit('setPlayerName', { name });
+      this.socket.emit('findGame'); // Start finding game after setting name
+    }
   }
 
   disconnect() {

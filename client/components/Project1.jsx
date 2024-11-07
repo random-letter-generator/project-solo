@@ -6,14 +6,32 @@ import { io } from 'socket.io-client';
 import { makeMove, resetGame, setWinner } from '../actions/actions';
 import '../stylesheets/gomoku.css'; // Ensure gomoku.css is imported
 import socketManager from '../socket/socket.js';
+import WaitingRoom from './WaitingRoom.jsx'; // Add .jsx extension
 
 const Project1 = () => {
   const dispatch = useDispatch();
   const gameState = useSelector((state) => state.gomoku);
+  const [recentGames, setRecentGames] = useState([]);
+
+  const fetchRecentGames = async () => {
+    try {
+      const response = await fetch('/api/recent-games');
+      const data = await response.json();
+      setRecentGames(data);
+    } catch (error) {
+      console.error('Error fetching recent games:', error);
+    }
+  };
 
   useEffect(() => {
     socketManager.connect(dispatch);
+    fetchRecentGames(); // Initial fetch
     return () => socketManager.disconnect();
+  }, []);
+
+  useEffect(() => {
+    socketManager.socket?.on('gameResult', fetchRecentGames);
+    return () => socketManager.socket?.off('gameResult', fetchRecentGames);
   }, []);
 
   const handleCellClick = (x, y) => {
@@ -37,13 +55,9 @@ const Project1 = () => {
     socketManager.makeMove(x, y, gameState.roomId);
   };
 
-  // Render waiting room if game hasn't started
+  // Replace the waiting room render condition
   if (gameState.gameStatus === 'waiting') {
-    return (
-      <div className='flex items-center justify-center h-screen'>
-        <div className='text-xl'>Waiting for opponent...</div>
-      </div>
-    );
+    return <WaitingRoom />;
   }
 
   const handleReset = () => {
@@ -216,6 +230,18 @@ const Project1 = () => {
           New Game
         </button>
       )}
+
+      <div className='recent-games'>
+        <h3 className='text-xl font-bold mb-4'>Recent Games</h3>
+        {recentGames.map((game, index) => (
+          <div key={index} className='recent-game-item'>
+            <span>
+              {game.winner.name} defeated {game.loser.name}
+            </span>
+            <span>{new Date(game.date).toLocaleDateString()}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
