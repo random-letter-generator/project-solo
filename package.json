@@ -18,6 +18,7 @@
     "framer-motion": "^11.11.11",
     "html-webpack-plugin": "^5.6.3",
     "mongodb": "^6.10.0",
+    "mongoose": "^8.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-redux": "^9.1.2",
@@ -32,13 +33,13 @@
     "@babel/preset-react": "^7.25.9",
     "autoprefixer": "^10.4.20",
     "babel-loader": "^9.2.1",
+    "concurrently": "^8.0.1",
     "css-loader": "^7.1.2",
     "postcss-loader": "^8.1.1",
     "style-loader": "^4.0.0",
     "tailwindcss": "^3.4.14",
     "webpack": "^5.96.1",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.1.0",
-    "concurrently": "^8.0.1"
+    "webpack-dev-server": "^5.1.0"
   }
 }

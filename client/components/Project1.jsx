@@ -2,11 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { io } from 'socket.io-client';
-import { makeMove, resetGame, setWinner } from '../actions/actions';
-import '../stylesheets/gomoku.css'; // Ensure gomoku.css is imported
+import { makeMove, resetGame } from '../actions/actions';
+import '../stylesheets/gomoku.css';
 import socketManager from '../socket/socket.js';
-import WaitingRoom from './WaitingRoom.jsx'; // Add .jsx extension
+import WaitingRoom from './WaitingRoom.jsx';
 
 const Project1 = () => {
   const dispatch = useDispatch();
@@ -16,7 +15,11 @@ const Project1 = () => {
   const fetchRecentGames = async () => {
     try {
       const response = await fetch('/api/recent-games');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
+      console.log('Fetched recent games:', data); // Debug log
       setRecentGames(data);
     } catch (error) {
       console.error('Error fetching recent games:', error);
@@ -26,12 +29,15 @@ const Project1 = () => {
   useEffect(() => {
     socketManager.connect(dispatch);
     fetchRecentGames(); // Initial fetch
-    return () => socketManager.disconnect();
-  }, []);
 
-  useEffect(() => {
+    // Listen for 'gameResult' event to refresh recent games
     socketManager.socket?.on('gameResult', fetchRecentGames);
-    return () => socketManager.socket?.off('gameResult', fetchRecentGames);
+
+    // Clean up on unmount
+    return () => {
+      socketManager.socket?.off('gameResult', fetchRecentGames);
+      socketManager.disconnect();
+    };
   }, []);
 
   const handleCellClick = (x, y) => {
@@ -54,11 +60,6 @@ const Project1 = () => {
 
     socketManager.makeMove(x, y, gameState.roomId);
   };
-
-  // Replace the waiting room render condition
-  if (gameState.gameStatus === 'waiting') {
-    return <WaitingRoom />;
-  }
 
   const handleReset = () => {
     console.log('Game reset');
@@ -137,111 +138,124 @@ const Project1 = () => {
   };
 
   return (
-    <div className='flex flex-col items-center bg-yellow-50 min-h-screen'>
-      <h2
-        className={`text-2xl font-medium mb-4 ${
-          gameState.winner
-            ? gameState.winner === 'cheems'
-              ? 'winner-cheems'
-              : 'winner-darkdoge'
-            : ''
-        }`}
-      >
-        {gameState.winner
-          ? `Winner: ${gameState.winner === 'black' ? 'Dark Doge' : 'Cheems'}`
-          : `Current Player: ${
-              gameState.currentPlayer === 'black' ? 'Dark Doge' : 'Cheems'
+    <div className='relative'>
+      <div className='page-background'></div>
+      {gameState.gameStatus === 'waiting' ? (
+        <WaitingRoom />
+      ) : (
+        <div className='flex flex-col items-center min-h-screen relative'>
+          <h2
+            className={`text-2xl font-medium mb-4 ${
+              gameState.winner
+                ? gameState.winner === 'cheems'
+                  ? 'winner-cheems'
+                  : 'winner-darkdoge'
+                : ''
             }`}
-      </h2>
+          >
+            {gameState.winner
+              ? `Winner: ${
+                  gameState.winner === 'black' ? 'Dark Doge' : 'Cheems'
+                }`
+              : `Current Player: ${
+                  gameState.currentPlayer === 'black' ? 'Dark Doge' : 'Cheems'
+                }`}
+          </h2>
 
-      {/* Add player role display */}
-      <div className='mb-4 text-lg text-amber-700'>
-        You are playing as: {getPlayerRole()}
-      </div>
-
-      {/* Status display */}
-      <div className='mb-4 text-lg text-amber-600'>
-        {gameState.winner
-          ? `Game Over! ${
-              gameState.winner === 'black' ? 'Dark Doge' : 'Cheems'
-            } wins!`
-          : gameState.isMyTurn
-          ? 'Your turn!'
-          : "Opponent's turn"}
-      </div>
-
-      <div className='board-container'>
-        {/* Grid Lines */}
-        {[...Array(15)].map((_, i) => (
-          <React.Fragment key={i}>
-            <div
-              className='board-line horizontal'
-              style={{ top: `${(i * 100) / 14}%` }}
-            ></div>
-            <div
-              className='board-line vertical'
-              style={{ left: `${(i * 100) / 14}%` }}
-            ></div>
-          </React.Fragment>
-        ))}
-
-        {/* Pieces */}
-        <div className='pieces-grid'>
-          {gameState.board.map((row, y) =>
-            row.map((cell, x) => (
-              <div
-                key={`${x}-${y}`}
-                onClick={() => handleCellClick(x, y)}
-                className='absolute'
-                style={{
-                  top: `${(y * 100) / 14}%`,
-                  left: `${(x * 100) / 14}%`,
-                  width: '30px' /* Adjusted size */,
-                  height: '30px' /* Adjusted size */,
-                  transform: 'translate(-50%, -50%)',
-                }}
-              >
-                {/* Hover Effect */}
-                {!cell && !gameState.winner && (
-                  <div
-                    className={`piece hover ${
-                      gameState.currentPlayer === 'black' ? 'black' : 'white'
-                    }`}
-                  ></div>
-                )}
-                {/* Placed Piece */}
-                {cell && (
-                  <div
-                    className={`piece ${cell === 'black' ? 'black' : 'white'}`}
-                  ></div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Only show reset button if game is over */}
-      {gameState.winner && (
-        <button
-          onClick={handleReset}
-          className='mt-4 px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600'
-        >
-          New Game
-        </button>
-      )}
-
-      <div className='recent-games'>
-        <h3 className='text-xl font-bold mb-4'>Recent Games</h3>
-        {recentGames.map((game, index) => (
-          <div key={index} className='recent-game-item'>
-            <span>
-              {game.winner.name} defeated {game.loser.name}
-            </span>
-            <span>{new Date(game.date).toLocaleDateString()}</span>
+          {/* Add player role display */}
+          <div className='mb-4 text-lg text-amber-700'>
+            You are playing as: {getPlayerRole()}
           </div>
-        ))}
-      </div>
+
+          {/* Status display */}
+          <div className='mb-4 text-lg text-amber-600'>
+            {gameState.winner
+              ? `Game Over! ${
+                  gameState.winner === 'black' ? 'Dark Doge' : 'Cheems'
+                } wins!`
+              : gameState.isMyTurn
+              ? 'Your turn!'
+              : "Opponent's turn"}
+          </div>
+
+          <div className='board-container'>
+            {/* Grid Lines */}
+            {[...Array(15)].map((_, i) => (
+              <React.Fragment key={i}>
+                <div
+                  className='board-line horizontal'
+                  style={{ top: `${(i * 100) / 14}%` }}
+                ></div>
+                <div
+                  className='board-line vertical'
+                  style={{ left: `${(i * 100) / 14}%` }}
+                ></div>
+              </React.Fragment>
+            ))}
+
+            {/* Pieces */}
+            <div className='pieces-grid'>
+              {gameState.board.map((row, y) =>
+                row.map((cell, x) => (
+                  <div
+                    key={`${x}-${y}`}
+                    onClick={() => handleCellClick(x, y)}
+                    className='absolute'
+                    style={{
+                      top: `${(y * 100) / 14}%`,
+                      left: `${(x * 100) / 14}%`,
+                      width: '30px' /* Adjusted size */,
+                      height: '30px' /* Adjusted size */,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    {/* Hover Effect */}
+                    {!cell && !gameState.winner && (
+                      <div
+                        className={`piece hover ${
+                          gameState.currentPlayer === 'black'
+                            ? 'black'
+                            : 'white'
+                        }`}
+                      ></div>
+                    )}
+                    {/* Placed Piece */}
+                    {cell && (
+                      <div
+                        className={`piece ${
+                          cell === 'black' ? 'black' : 'white'
+                        }`}
+                      ></div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Only show reset button if game is over */}
+          {gameState.winner && (
+            <button
+              onClick={handleReset}
+              className='mt-4 px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600'
+            >
+              New Game
+            </button>
+          )}
+
+          <div className='recent-games'>
+            <h3 className='text-xl font-bold mb-4'>Recent Games</h3>
+            {recentGames.map((game, index) => (
+              <div key={index} className='recent-game-item'>
+                <span>
+                  {game.winner.name} defeated {game.loser.name}
+                </span>
+                <span>{new Date(game.date).toLocaleDateString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

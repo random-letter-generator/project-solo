@@ -11,6 +11,7 @@ class SocketManager {
   constructor() {
     this.socket = null;
     this.dispatch = null;
+    this.playerName = null; // Store player name
   }
 
   connect(dispatch) {
@@ -18,18 +19,32 @@ class SocketManager {
 
     this.dispatch = dispatch;
     this.socket = io('http://localhost:3000/gomoku', {
-      transports: ['websocket'],
-      reconnection: true,
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      autoConnect: true,
+      withCredentials: true,
     });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+    });
+
+    // Move setupListeners here to ensure it's called only once
     this.setupListeners();
+
+    this.socket.on('connect', () => {
+      console.log('Connected to server with ID:', this.socket.id);
+      // Emit 'setPlayerName' and 'findGame' if the player name is already set
+      if (this.playerName) {
+        console.log('Emitting setPlayerName with:', this.playerName);
+        this.socket.emit('setPlayerName', { name: this.playerName });
+        this.socket.emit('findGame');
+      }
+    });
   }
 
   setupListeners() {
-    this.socket.on('connect', () => {
-      console.log('Connected to server with ID:', this.socket.id);
-      // Do not emit findGame here anymore
-    });
-
     this.socket.on('gameStart', (gameState) => {
       console.log('Game started:', gameState);
       // Make sure we pass all necessary data
@@ -86,10 +101,20 @@ class SocketManager {
   }
 
   setPlayerName(name) {
+    console.log('Setting player name:', name);
+    this.playerName = name;
+
     if (this.socket) {
-      this.socket.emit('setPlayerName', { name });
-      this.socket.emit('findGame'); // Start finding game after setting name
+      if (this.socket.connected) {
+        console.log('Socket connected, emitting events immediately');
+        this.socket.emit('setPlayerName', { name });
+        this.socket.emit('findGame');
+      } else {
+        console.log('Socket not connected, waiting for connection');
+        this.socket.connect();
+      }
     }
+    // If not connected yet, the 'connect' event handler will emit the events
   }
 
   disconnect() {

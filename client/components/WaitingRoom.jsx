@@ -15,7 +15,7 @@ const WaitingRoom = () => {
   };
 
   return (
-    <div className='flex flex-col items-center justify-center p-8'>
+    <div className='flex flex-col items-center justify-center min-h-screen p-8'>
       {!isSubmitted ? (
         <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
           <input

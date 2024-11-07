@@ -3,14 +3,23 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const gomokuController = require('./controllers/gomokuController');
+const { connection, GameResult } = require('./models/gomokuModels');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:8080',
+    origin: ['http://localhost:8080', 'http://localhost:3000'],
     methods: ['GET', 'POST'],
+    credentials: true,
+    allowedHeaders: ['Content-Type'],
   },
+  transports: ['websocket', 'polling'],
+});
+
+// Add debug logging for socket connections
+io.engine.on('connection_error', (err) => {
+  console.log('Connection error:', err);
 });
 
 const PORT = 3000;
@@ -24,7 +33,21 @@ const gomokuIO = io.of('/gomoku');
 gomokuIO.on('connection', (socket) => {
   console.log('Player connected to Gomoku:', socket.id);
 
+  // Initialize playerName as null
+  socket.playerName = null;
+
+  socket.on('setPlayerName', ({ name }) => {
+    socket.playerName = name;
+    console.log(`Player ${socket.id} set name to ${name}`);
+  });
+
   socket.on('findGame', () => {
+    if (!socket.playerName) {
+      console.log(`Player ${socket.id} has not set a name yet.`);
+      return;
+    }
+
+    console.log('findGame event received from', socket.id);
     let roomId = findAvailableRoom(games);
     socket.join(roomId);
 
@@ -54,12 +77,6 @@ gomokuIO.on('connection', (socket) => {
         roomId: roomId,
       });
     }
-  });
-
-  socket.on('setPlayerName', ({ name }) => {
-    const playerId = socket.id;
-    // Store player name in socket
-    socket.playerName = name;
   });
 
   socket.on('move', async ({ x, y, roomId }) => {
@@ -98,7 +115,7 @@ gomokuIO.on('connection', (socket) => {
         .fetchSockets()
         .then((sockets) => sockets.find((s) => s.id === loserId));
 
-      // Save game result
+      // Save game result directly to the database
       const gameResult = {
         roomId,
         winner: {
@@ -111,9 +128,15 @@ gomokuIO.on('connection', (socket) => {
         },
       };
 
+      try {
+        await GameResult.create(gameResult);
+        console.log('Game result saved:', gameResult);
+      } catch (err) {
+        console.error('Error saving game result:', err);
+      }
+
       // Emit event to trigger frontend update
       gomokuIO.to(roomId).emit('gameResult', gameResult);
-
       games.delete(roomId);
       return;
     }
@@ -185,12 +208,40 @@ function checkWinner(board, x, y, player) {
   return false;
 }
 
+// Move this before other middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
+
 // Parse JSON bodies
 app.use(express.json());
 // Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true }));
 
-// API routes must come before static files
+// Add this middleware before your routes
+app.use((req, res, next) => {
+  if (connection.readyState !== 1) {
+    console.log('Database connection state:', connection.readyState);
+    if (req.path.startsWith('/api/')) {
+      return res.status(503).json({ error: 'Database connection not ready' });
+    }
+  }
+  next();
+});
+
+// Move the API routes BEFORE the static file middleware
+app.use('/api', express.json());
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
+
+// API routes
 app.post('/api/game-results', gomokuController.saveGameResult);
 app.get('/api/recent-games', gomokuController.getRecentGames);
 

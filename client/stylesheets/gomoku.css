@@ -1,10 +1,20 @@
 /* gomoku.css */
+/* Remove or comment out the background styles on the body */
+/*
 body {
   background: linear-gradient(-45deg, #ffd700, #ffeb3b, #ffc107, #ffb300);
   background-size: 400% 400%;
   animation: flowingPattern 15s ease infinite;
   min-height: 100vh;
 }
+*/
+
+/* Ensure the body has a transparent background */
+body {
+  background: transparent;
+  min-height: 100vh;
+}
+
 .board-container {
   position: relative;
   width: 750px;
@@ -168,17 +178,69 @@ body {
 /* Recent Games List styles */
 .recent-games {
   margin-top: 2rem;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
   max-width: 600px;
   width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .recent-game-item {
-  padding: 0.5rem;
-  border-bottom: 1px solid #ddd;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(205, 164, 94, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: #8b4513;
+  font-size: 0.95rem;
+  transition: background-color 0.2s ease;
+}
+
+.recent-game-item:last-child {
+  border-bottom: none;
+}
+
+.recent-game-item:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Animated Background */
+.page-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(
+    45deg,
+    #ffd700 0%,
+    #ff8c00 25%,
+    #ffa500 50%,
+    #ff4500 75%,
+    #ffd700 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientFlow 8s ease-in-out infinite;
+  opacity: 0.8;
+}
+
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(30deg);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
 }
