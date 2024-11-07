@@ -13,8 +13,10 @@ const Project1 = () => {
   const [recentGames, setRecentGames] = useState([]);
 
   const fetchRecentGames = async () => {
+    let response;
     try {
-      const response = await fetch('/api/recent-games');
+      response = await fetch('http://localhost:3000/api/recent-games'); // Updated URL
+      console.log('Fetch response:', response); // Log the raw response
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -23,6 +25,10 @@ const Project1 = () => {
       setRecentGames(data);
     } catch (error) {
       console.error('Error fetching recent games:', error);
+      if (response && !response.bodyUsed) {
+        const responseText = await response.text();
+        console.error('Response text:', responseText);
+      }
     }
   };
 
@@ -248,9 +254,9 @@ const Project1 = () => {
             {recentGames.map((game, index) => (
               <div key={index} className='recent-game-item'>
                 <span>
-                  {game.winner.name} defeated {game.loser.name}
+                  Winner: {game.winner.name}, Loser: {game.loser.name}
                 </span>
-                <span>{new Date(game.date).toLocaleDateString()}</span>
+                <span>{new Date(game.date).toLocaleString()}</span>
               </div>
             ))}
           </div>

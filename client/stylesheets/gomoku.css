@@ -226,7 +226,7 @@ body {
     #ffd700 100%
   );
   background-size: 400% 400%;
-  animation: gradientFlow 8s ease-in-out infinite;
+  animation: gradientFlow 5s ease-in-out infinite;
   opacity: 0.8;
 }
 
@@ -235,12 +235,20 @@ body {
     background-position: 0% 50%;
     filter: hue-rotate(0deg);
   }
+  25% {
+    background-position: 50% 50%;
+    filter: hue-rotate(90deg);
+  }
   50% {
     background-position: 100% 50%;
-    filter: hue-rotate(30deg);
+    filter: hue-rotate(180deg);
+  }
+  75% {
+    background-position: 50% 50%;
+    filter: hue-rotate(270deg);
   }
   100% {
     background-position: 0% 50%;
-    filter: hue-rotate(0deg);
+    filter: hue-rotate(360deg);
   }
 }

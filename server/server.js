@@ -4,6 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const gomokuController = require('./controllers/gomokuController');
 const { connection, GameResult } = require('./models/gomokuModels');
+const cors = require('cors');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,7 +25,67 @@ io.engine.on('connection_error', (err) => {
 
 const PORT = 3000;
 
-// Game state store
+// Middleware for parsing JSON and URL-encoded data
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Use CORS middleware
+app.use(
+  cors({
+    origin: 'http://localhost:8080', // Allow requests from frontend
+    methods: ['GET', 'POST'],
+    credentials: true,
+  })
+);
+
+// Middleware for setting CORS headers
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
+
+// Middleware to check database connection
+app.use((req, res, next) => {
+  if (connection.readyState !== 1 && req.path.startsWith('/api/')) {
+    console.log('Database connection state:', connection.readyState);
+    return res.status(503).json({ error: 'Database connection not ready' });
+  }
+  next();
+});
+
+// API routes
+app.post('/api/game-results', gomokuController.saveGameResult);
+app.get('/api/recent-games', gomokuController.getRecentGames);
+
+// Serve static files from the React app build
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Catch-all route to serve index.html for any other requests
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  const defaultErr = {
+    log: 'Express error handler caught unknown middleware error: ' + err,
+    status: 500,
+    message: { err: 'An error occurred' },
+  };
+  const errorObj = Object.assign({}, defaultErr, err);
+  console.error(errorObj.log);
+  return res.status(errorObj.status).json(errorObj.message);
+});
+
+// Start server
+server.listen(PORT, () => {
+  console.log(`Server listening on port: ${PORT}`);
+});
+
+module.exports = app;
+
 const games = new Map();
 
 // Gomoku namespace
@@ -207,72 +268,3 @@ function checkWinner(board, x, y, player) {
   }
   return false;
 }
-
-// Move this before other middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  next();
-});
-
-// Parse JSON bodies
-app.use(express.json());
-// Parse URL-encoded bodies
-app.use(express.urlencoded({ extended: true }));
-
-// Add this middleware before your routes
-app.use((req, res, next) => {
-  if (connection.readyState !== 1) {
-    console.log('Database connection state:', connection.readyState);
-    if (req.path.startsWith('/api/')) {
-      return res.status(503).json({ error: 'Database connection not ready' });
-    }
-  }
-  next();
-});
-
-// Move the API routes BEFORE the static file middleware
-app.use('/api', express.json());
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  next();
-});
-
-// API routes
-app.post('/api/game-results', gomokuController.saveGameResult);
-app.get('/api/recent-games', gomokuController.getRecentGames);
-
-// Static files and catch-all route should come last
-app.use(express.static(path.join(__dirname, '../dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist', 'index.html'));
-});
-
-// Add this line to help with debugging
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  const defaultErr = {
-    log: 'Express error handler caught unknown middleware error',
-    status: 500,
-    message: { err: 'An error occurred' },
-  };
-  const errorObj = Object.assign({}, defaultErr, err);
-  console.log(errorObj.log);
-  return res.status(errorObj.status).json(errorObj.message);
-});
-
-// Start server
-server.listen(PORT, () => {
-  console.log(`Server listening on port: ${PORT}`);
-});
-
-module.exports = app;
