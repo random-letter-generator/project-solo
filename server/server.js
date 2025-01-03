@@ -5,6 +5,8 @@ const { Server } = require('socket.io');
 const gomokuController = require('./controllers/gomokuController');
 const { connection, GameResult } = require('./models/gomokuModels');
 const cors = require('cors');
+const chatroomController = require('./controllers/chatroomController');
+const { Message } = require('./models/chatroomModels');
 
 const app = express();
 const server = http.createServer(app);
@@ -58,6 +60,10 @@ app.use((req, res, next) => {
 // API routes
 app.post('/api/game-results', gomokuController.saveGameResult);
 app.get('/api/recent-games', gomokuController.getRecentGames);
+
+// Add these routes to your existing Express routes
+app.get('/api/messages', chatroomController.getMessages);
+app.post('/api/messages', chatroomController.saveMessage);
 
 // Serve static files from the React app build
 app.use(express.static(path.join(__dirname, '../dist')));
@@ -213,6 +219,38 @@ gomokuIO.on('connection', (socket) => {
         gomokuIO.to(roomId).emit('playerLeft');
         games.delete(roomId);
       }
+    }
+  });
+});
+
+// Add this after your existing gomokuIO socket handlers
+const chatIO = io.of('/chat');
+
+chatIO.on('connection', (socket) => {
+  console.log('User connected to chat:', socket.id);
+
+  socket.on('join', (username) => {
+    socket.username = username;
+    socket.broadcast.emit('userJoined', username);
+  });
+
+  socket.on('message', async (messageData) => {
+    try {
+      const message = await Message.create({
+        username: socket.username,
+        content: messageData.content,
+        room: messageData.room || 'general',
+      });
+
+      chatIO.emit('newMessage', message);
+    } catch (err) {
+      console.error('Error saving message:', err);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    if (socket.username) {
+      socket.broadcast.emit('userLeft', socket.username);
     }
   });
 });
